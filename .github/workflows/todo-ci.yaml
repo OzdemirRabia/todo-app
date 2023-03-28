@@ -1,0 +1,55 @@
+name: Build todo-app
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          install: true
+
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v1
+      #   with:
+      #     aws-region: eu-central-1
+
+      # - name: Login to Amazon ECR
+      #   id: login-ecr
+      #   uses: aws-actions/amazon-ecr-login@v1
+
+      - name: 'Get Login to AWS ECR'
+        id: ecr-login
+        uses: thalesvon/ecr-login@master
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_DEFAULT_OUTPUT: yaml
+          AWS_REGION: eu-central-1
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        with:
+          args: 'get-login --no-include-email --region ${AWS_REGION}'
+
+      - name: 'Docker Login'
+        run: ${{ steps. ecr-login.outputs.login-string }}
+
+      - name: Docker Meta for todo-app
+        id: meta_todo-app
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ secrets.ecr_registry }}/todo-app
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push todo-app
+        id: docker_build-todo-app
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ${{ steps.meta_todo-app.outputs.tags }}

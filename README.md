@@ -1,2 +1,2 @@
-# todo-app
-todo-app
+# basic-todo-app
+basic-todo-app
